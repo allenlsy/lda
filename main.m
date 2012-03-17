@@ -71,6 +71,6 @@ end
 dbSize = length(imageDb);
 for i=1:dbSize
     
-
+  
 
 % 6. Classification: Nearest Neighbor
