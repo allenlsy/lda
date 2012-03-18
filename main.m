@@ -23,8 +23,10 @@ kValue = args{1};
 maxLabel = 0;
 rs=1;
 cs=1;
-rs = args{2};
-cs = args{2};
+if nargin>=2
+    rs = args{2};
+    cs = args{2};
+end
 
 % 1. Face Image Cropping and Preprocessing
 
