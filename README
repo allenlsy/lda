@@ -1,1 +1,23 @@
 This is the machine learning assignment of mine
+
+1. Installing Octave3.2
+    
+    Install octave3.2 and octave3.2-headers
+    Then go to pkgs directory, enter octave3.2 shell
+    Type in 'pkg install image.tar.gz'. Using the same way to install strings.
+
+2. Run the program
+    
+    octave3.2 -q main.m 5 3 100
+    5 - k value in KNN
+    3 - Shrinking original image 3 times before dimensionality reduction
+    100 - Optional. Manually set the reducted dimension d to 100.
+
+3. Troubleshotting
+
+    If matrices dimensions are not matched, try 'rm imageDb.data' and run the program again.
+
+------------------------------
+For further informaion, please email cafe@allenlsy.com
+
+
