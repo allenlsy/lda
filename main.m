@@ -8,13 +8,18 @@ function res = Euclid(r1, r2)
 end
 
 
-
-
 % 0. Initialization
+
 pkg load image;
 pkg load strings;
 
 args = argv();
+
+if nargin<1,
+    disp('main.m k-Value [image scaling] [PCA d]');
+    exit;
+end
+
 kValue = args{1};
 maxLabel = 0;
 rs=1;
@@ -102,23 +107,26 @@ Sigma=diag(Sigma);
 
 % After achieving P and Sigma, run all possible d and report the best results, based on energy criterion
 disp('  calculating d');
+if length(args)>2,
+    d=args{3};
+else
 
-
-sum = zeros(1, length(Sigma) );
-for i=1:length( Sigma )
-    sum += Sigma(i);
-end
-
-temp = zeros(1, length(Sigma) );
-max = 0;
-for i=1:length( Sigma ),
-    temp += Sigma(i);
-    if temp/sum > max,
-        max = temp/sum;
-        d = i;
+    sum = zeros(1, length(Sigma) );
+    for i=1:length( Sigma )
+        sum += Sigma(i);
     end
+
+    temp = zeros(1, length(Sigma) );
+    max = 0;
+    for i=1:length( Sigma ),
+        temp += Sigma(i);
+        if temp/sum > max,
+            max = temp/sum;
+            d = i;
+        end
+    end
+    d--;
 end
-d--;
 PCAMtx = transpose(P(:,[1:d])); 
 
 % 5. Construct FaceDB: Project Data to low-dimensional space
