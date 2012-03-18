@@ -1,4 +1,11 @@
-
+function res = Euclid(r1, r2)
+    len = length(r1);
+    res = 0;
+    for i=1:len
+        res += (r1(i)-r2(i))^2;
+    end
+    res = sqrt(res);
+end
 
 
 
@@ -7,17 +14,21 @@
 pkg load image;
 pkg load strings;
 
+args = argv();
+kValue = args{1};
+maxLabel = 0;
+rs=1;
+cs=1;
+rs = args{2};
+cs = args{2};
 
 % 1. Face Image Cropping and Preprocessing
-rs = 3;
-cs = 3;
-
 
 % 2. Construct ImageDB: Read Images
 
-disp('Constructing imageDb...')
+disp('Constructing imageDb...');
 if ( ~exist('imageDb.data', "file") )  % if not exists imageDb file
-    disp('  no imageDb.data. Now creating imageDb');
+    disp('  no imageDb.data. Now creating imageDb...');
     cd dataset;
     folder = dir('.');
     for i=1:40
@@ -26,6 +37,9 @@ if ( ~exist('imageDb.data', "file") )  % if not exists imageDb file
         for j=1:10
             index = (i-1)*10+j
             imageDb(index).label = i;
+            if i>maxLabel,
+                maxLabel=i;
+            end
             img = imread( strcat( folderName, '/', subdir(j+2).name ) );
             s = size(img);
             
@@ -58,7 +72,6 @@ else
     D=s(1)*s(2); % original size
 end
 
-D
 % 3. Construct FeatureDB: Extract Features
 % imageDb;
 
@@ -67,7 +80,7 @@ disp('Dimensinality Reduction...')
 
 % calculate xavg, X
 disp('  calculate xavg, X');
-n = length(imageDb)
+n = length(imageDb);
 xavg = double(zeros(D, 1));
 X=double([]);
 
@@ -80,8 +93,6 @@ end
 for i=1:n
     X=[X imageDb(i).image-xavg];
 end
-disp('X size');
-size(X)
 % calculate C, Sigma
 
 disp('  calculate C, Sigma');
@@ -91,6 +102,8 @@ Sigma=diag(Sigma);
 
 % After achieving P and Sigma, run all possible d and report the best results, based on energy criterion
 disp('  calculating d');
+
+
 sum = zeros(1, length(Sigma) );
 for i=1:length( Sigma )
     sum += Sigma(i);
@@ -105,19 +118,83 @@ for i=1:length( Sigma ),
         d = i;
     end
 end
-d
+d--;
 PCAMtx = transpose(P(:,[1:d])); 
 
 % 5. Construct FaceDB: Project Data to low-dimensional space
 disp('Construct FaceDB');
 dbSize = length(imageDb);
-size(imageDb(1).image)
 
 for i=1:dbSize,
     faceDb(i).label = imageDb(i).label;
     faceDb(i).image = PCAMtx * imageDb(i).image;
 end
-length(faceDb)
-size(faceDb(1).image)
+
 
 % 6. Classification: Nearest Neighbor
+
+correct = 0;
+totalTesting = 0;
+
+cd dataset;
+folder = dir('.');
+for i=1:40
+    folderName = folder(i+3).name;
+    subdir = dir( folderName );
+    for j=9:10
+        totalTesting++;
+        disp(sprintf('testing %d...', totalTesting)) ;
+        testing.label = i;
+        img = imread( strcat( folderName, '/', subdir(j+2).name ) );
+        s = size(img);
+        
+        % decrease img
+        [r,c] = size(img);
+        temp=[];
+        k=1;
+        while k<=r,
+            temp = [temp;img(k,:)];
+            k+=rs;
+        end
+        k=1;
+        res=[];
+        while k<=c,
+            res=[res, temp(:,k)];
+            k+=cs;
+        end
+       
+        s = size(res);
+        testing.image = PCAMtx * reshape( double(res), s(1)*s(2), 1) ;
+
+        % knn
+        % 1-distance 2-label
+        candidates = [];
+        for k=1:length(faceDb),
+            candidates(k,1) = Euclid(testing.image, faceDb(k).image);
+            candidates(k,2) = faceDb(k).label;
+        end
+
+        % cCell = mat2cell(candidates,2)
+        candidates = sortrows(candidates, 1);
+        maxLabel = 40;
+        labels = zeros(maxLabel);
+        for k=1:kValue
+            labels( candidates(k,2) )++;
+        end
+        res = 0;
+        max=0;
+        for k=1:maxLabel
+            if labels(k)>max,
+                max=labels(k);
+                res = k;
+            end
+        end
+        if res == testing.label,
+            disp('correct');
+            correct++;
+        end
+    end
+end
+cd ..;
+
+disp(sprintf('accuracy = %d / %d = %f', correct, totalTesting, correct/totalTesting) );
