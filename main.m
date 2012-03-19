@@ -15,33 +15,43 @@ pkg load strings;
 args = argv();
 
 if nargin<1,
-    disp('main.m k-Value [image scaling] [PCA d]');
+    disp('main.m k-Value [fold=1] [image scaling] [PCA d]');
     exit;
 end
+
+fold=1;
 
 kValue = args{1};
 maxLabel = 0;
 rs=1;
 cs=1;
-if nargin>=2
-    rs = args{2};
-    cs = args{2};
+
+if nargin>=2,
+    fold = str2num(args{2});
+end
+
+if nargin>=3
+    rs = args{3};
+    cs = args{3};
 end
 
 % 1. Face Image Cropping and Preprocessing
 
 % 2. Construct ImageDB: Read Images
 
-disp('Constructing imageDb...');
+disp('2. Constructing imageDb...');
 if ( ~exist('imageDb.data', "file") )  % if not exists imageDb file
-    disp('  no imageDb.data. Now creating imageDb...');
+    disp('>>  no imageDb.data. Now creating imageDb...');
     cd dataset;
     folder = dir('.');
+    index=0;
+    % s=0;
     for i=1:40
         folderName = folder(i+3).name;
         subdir = dir( folderName );
-        for j=1:10
-            index = (i-1)*10+j
+        for j=1:10-fold
+            index++;
+            index
             imageDb(index).label = i;
             if i>maxLabel,
                 maxLabel=i;
@@ -67,7 +77,6 @@ if ( ~exist('imageDb.data', "file") )  % if not exists imageDb file
             s = size(res);
             imageDb(index).image = reshape( double(res), s(1)*s(2), 1) ;
         end
-
     end
     D=s(1)*s(2);
     cd ..;
@@ -82,10 +91,10 @@ end
 % imageDb;
 
 % 4. Dimensionality Reduction: PCA
-disp('Dimensinality Reduction...')
+disp('4. Dimensinality Reduction...')
 
 % calculate xavg, X
-disp('  calculate xavg, X');
+disp('>>  calculate xavg, X');
 n = length(imageDb);
 xavg = double(zeros(D, 1));
 X=double([]);
@@ -101,15 +110,15 @@ for i=1:n
 end
 % calculate C, Sigma
 
-disp('  calculate C, Sigma');
+disp('>>  calculate C, Sigma');
 C = (1/n)*X*transpose(X);
 [P, Sigma] = eig(C);
 Sigma=diag(Sigma);
 
 % After achieving P and Sigma, run all possible d and report the best results, based on energy criterion
-disp('  calculating d');
-if length(args)>2,
-    d=args{3};
+disp('>>  calculating d');
+if length(args)>3,
+    d=args{4};
 else
     sum = zeros(1, length(Sigma) );
     for i=1:length( Sigma )
@@ -130,7 +139,7 @@ end
 PCAMtx = transpose(P(:,[1:d])); 
 
 % 5. Construct FaceDB: Project Data to low-dimensional space
-disp('Construct FaceDB');
+disp('5. Construct FaceDB');
 dbSize = length(imageDb);
 
 for i=1:dbSize,
@@ -149,7 +158,7 @@ folder = dir('.');
 for i=1:40
     folderName = folder(i+3).name;
     subdir = dir( folderName );
-    for j=9:10
+    for j=11-fold:10
         totalTesting++;
         disp(sprintf('testing %d...', totalTesting)) ;
         testing.label = i;
@@ -182,7 +191,6 @@ for i=1:40
             candidates(k,2) = faceDb(k).label;
         end
 
-        % cCell = mat2cell(candidates,2)
         candidates = sortrows(candidates, 1);
         maxLabel = 40;
         labels = zeros(maxLabel);
@@ -198,11 +206,11 @@ for i=1:40
             end
         end
         if res == testing.label,
-            disp('correct');
+            disp('>>  correct');
             correct++;
         end
     end
 end
 cd ..;
 
-disp(sprintf('accuracy = %d / %d = %f', correct, totalTesting, correct/totalTesting) );
+disp(sprintf('accuracy = %d / %d = %f%%', correct, totalTesting, correct/totalTesting*100) );
