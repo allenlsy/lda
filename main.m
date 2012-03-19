@@ -21,7 +21,7 @@ end
 
 fold=1;
 
-kValue = args{1};
+kValue = str2num(args{1});
 maxLabel = 0;
 rs=1;
 cs=1;
@@ -31,9 +31,15 @@ if nargin>=2,
 end
 
 if nargin>=3
-    rs = args{3};
-    cs = args{3};
+    rs = str2num(args{3});
+    cs = rs;
 end
+
+printf('\n*************************\nExperiment: kValue=%d, fold=%d, shrinking=%d', kValue, fold, rs);
+if nargin>=4,
+    printf(', PCAd=%d', args{4});
+end
+printf('\n*************************\n\n');
 
 % 1. Face Image Cropping and Preprocessing
 
@@ -51,7 +57,6 @@ if ( ~exist('imageDb.data', "file") )  % if not exists imageDb file
         subdir = dir( folderName );
         for j=1:10-fold
             index++;
-            index
             imageDb(index).label = i;
             if i>maxLabel,
                 maxLabel=i;
@@ -91,7 +96,7 @@ end
 % imageDb;
 
 % 4. Dimensionality Reduction: PCA
-disp('4. Dimensinality Reduction...')
+disp('4. Dimensinality Reduction...');
 
 % calculate xavg, X
 disp('>>  calculate xavg, X');
@@ -137,6 +142,7 @@ else
     d--;
 end
 PCAMtx = transpose(P(:,[1:d])); 
+d
 
 % 5. Construct FaceDB: Project Data to low-dimensional space
 disp('5. Construct FaceDB');
@@ -160,7 +166,6 @@ for i=1:40
     subdir = dir( folderName );
     for j=11-fold:10
         totalTesting++;
-        disp(sprintf('testing %d...', totalTesting)) ;
         testing.label = i;
         img = imread( strcat( folderName, '/', subdir(j+2).name ) );
         s = size(img);
@@ -205,8 +210,8 @@ for i=1:40
                 res = k;
             end
         end
+        printf('>>  testing %3d **  predicted: %4d  real: %4d\n', totalTesting, res, testing.label);
         if res == testing.label,
-            disp('>>  correct');
             correct++;
         end
     end
