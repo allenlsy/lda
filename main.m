@@ -117,8 +117,11 @@ if (~exist('PCAMtx.data', "file") ),
 
     disp('>>  calculate C, Sigma');
     C = (1/n)*X*transpose(X);
-    [P, Sigma] = eig(C);
+    length(C)
+    size(C)
+    [P, Sigma] = eigs(C, length(C)-2, 'lm');
     Sigma=diag(Sigma);
+    size(Sigma)
 
 
     % After achieving P and Sigma, run all possible d and report the best results, based on energy criterion
