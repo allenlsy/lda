@@ -131,12 +131,12 @@ if (~exist('PCAMtx.data', "file") ),
     % original program for calculating cov C
     C = (1/n)*X*transpose(X);
     % C = cov(X);
-    size(C)
-    length(C)
+    % size(C)
+    % length(C)
 
     disp('>>  calculate Sigma');
     [P, Sigma] = findLeadingEigV(C,length(C)-1 );
-    size(Sigma)
+    & size(Sigma)
 
     % Sigma=diag(Sigma);
 
@@ -149,6 +149,7 @@ if (~exist('PCAMtx.data', "file") ),
         sum = zeros(1, length(Sigma) );
         for i=1:length( Sigma )
             sum += Sigma(i);
+        end
     end
     
     temp = zeros(1, length(Sigma) );
