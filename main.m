@@ -4,8 +4,27 @@ function res = Euclid(r1, r2)
     for i=1:len
         res += (r1(i)-r2(i))^2;
     end
-    res = sqrt(res);
+    % res = sqrt(res);
 end
+
+function shrinkedImg = shrinkImg(img, rs)
+    [r,c] = size(img);
+    shrinkedImg = img(1:rs:r, 1:rs:c);
+end
+
+%function to compute the first m leading eigenvectors of a matrix
+function [leading_eig, Sigma] = findLeadingEigV( A, m )
+    k=size(A,1); % assume A is square
+	[V,D]=eig(A); 
+	[S,I]=sort(diag(D)); 
+	leading_eigV = [];
+	for i=1:m
+        leading_eigV = [leading_eigV,V(:,I(k-i+1))];
+	end
+    Sigma=sort(diag(D));
+    leading_eig = leading_eigV;    
+end
+
 
 % 0. Initialization
 
@@ -15,7 +34,7 @@ pkg load strings;
 args = argv();
 
 if nargin<1,
-    disp('main.m k-Value [fold=1] [image scaling] [PCA d]');
+    disp('main.m k-Value [fold=1] [image scaling=1] [energy=1] [PCA d]');
     exit;
 end
 
@@ -25,6 +44,7 @@ kValue = str2num(args{1});
 maxLabel = 0;
 rs=1;
 cs=1;
+energy=1;
 
 if nargin>=2,
     fold = str2num(args{2});
@@ -35,8 +55,12 @@ if nargin>=3
     cs = rs;
 end
 
-printf('\n*************************\nExperiment: kValue=%d, fold=%d, shrinking=%d', kValue, fold, rs);
 if nargin>=4,
+    energy=str2double(args{4});
+end
+
+printf('\n*************************\nExperiment: kValue=%d, fold=%d, shrinking=%d, energy=%.3f', kValue, fold, rs, energy);
+if nargin>=5,
     printf(', PCAd=%d', args{4});
 end
 printf('\n*************************\n\n');
@@ -53,7 +77,7 @@ if ( ~exist('imageDb.data', "file") )  % if not exists imageDb file
     index=0;
     % s=0;
     for i=1:40
-        folderName = folder(i+3).name;
+        fold:erName = folder(i+3).name;
         subdir = dir( folderName );
         for j=1:10-fold
             index++;
@@ -62,23 +86,10 @@ if ( ~exist('imageDb.data', "file") )  % if not exists imageDb file
                 maxLabel=i;
             end
             img = imread( strcat( folderName, '/', subdir(j+2).name ) );
-            s = size(img);
             
             % decrease img
-            [r,c] = size(img);
-            temp=[];
-            k=1;
-            while k<=r,
-                temp = [temp;img(k,:)];
-                k+=rs;
-            end
-            k=1;
-            res=[];
-            while k<=c,
-                res=[res, temp(:,k)];
-                k+=cs;
-            end
-           
+            res = shrinkImg(img, rs);
+
             s = size(res);
             imageDb(index).image = reshape( double(res), s(1)*s(2), 1) ;
         end
@@ -115,16 +126,25 @@ for i=1:n
 end
 % calculate C, Sigma
 
-disp('>>  calculate C, Sigma');
+disp('>>  calculate C');
+% original program for calculating cov C
 C = (1/n)*X*transpose(X);
-[P, Sigma] = eig(C);
-Sigma=diag(Sigma);
+% C = cov(X);
+size(C)
+length(C)
+
+disp('>>  calculate Sigma');
+[P, Sigma] = findLeadingEigV(C,length(C)-1 );
+size(Sigma)
+
+% Sigma=diag(Sigma);
 
 % After achieving P and Sigma, run all possible d and report the best results, based on energy criterion
 disp('>>  calculating d');
-if length(args)>3,
-    d=args{4};
+if length(args)>=5,
+    d=str2num(args{5});
 else
+    d = 0;
     sum = zeros(1, length(Sigma) );
     for i=1:length( Sigma )
         sum += Sigma(i);
@@ -133,10 +153,16 @@ else
     temp = zeros(1, length(Sigma) );
     max = 0;
     for i=1:length( Sigma ),
+        
         temp += Sigma(i);
+        printf('%f  d=%d\n', temp/sum, d);
         if temp/sum > max,
             max = temp/sum;
             d = i;
+        end
+        if temp/sum > energy,
+            d=i;
+            break;
         end
     end
     d--;
