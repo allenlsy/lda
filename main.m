@@ -108,48 +108,49 @@ end
 
 % 4. Dimensionality Reduction: PCA
 disp('4. Dimensinality Reduction...');
+<<<<<<< HEAD
+if (~exist('PCAMtx.data', "file") ),
+    % calculate xavg, X
+    disp('>>  calculate xavg, X');
+    n = length(imageDb);
+    xavg = double(zeros(D, 1));
+    X=double([]);
 
-% calculate xavg, X
-disp('>>  calculate xavg, X');
-n = length(imageDb);
-xavg = double(zeros(D, 1));
-X=double([]);
-
-for i=1:n
-    xavg += double(imageDb(i).image);
-end
-for i=1:D
-    xavg(i) = xavg(i)/n;
-end
-for i=1:n
-    X=[X imageDb(i).image-xavg];
-end
-% calculate C, Sigma
-
-disp('>>  calculate C');
-% original program for calculating cov C
-C = (1/n)*X*transpose(X);
-% C = cov(X);
-size(C)
-length(C)
-
-disp('>>  calculate Sigma');
-[P, Sigma] = findLeadingEigV(C,length(C)-1 );
-size(Sigma)
-
-% Sigma=diag(Sigma);
-
-% After achieving P and Sigma, run all possible d and report the best results, based on energy criterion
-disp('>>  calculating d');
-if length(args)>=5,
-    d=str2num(args{5});
-else
-    d = 0;
-    sum = zeros(1, length(Sigma) );
-    for i=1:length( Sigma )
-        sum += Sigma(i);
+    for i=1:n
+        xavg += double(imageDb(i).image);
     end
+    for i=1:D
+        xavg(i) = xavg(i)/n;
+    end
+    for i=1:n
+        X=[X imageDb(i).image-xavg];
+    end
+    % calculate C, Sigma
 
+    disp('>>  calculate C');
+    % original program for calculating cov C
+    C = (1/n)*X*transpose(X);
+    % C = cov(X);
+    size(C)
+    length(C)
+
+    disp('>>  calculate Sigma');
+    [P, Sigma] = findLeadingEigV(C,length(C)-1 );
+    size(Sigma)
+
+    % Sigma=diag(Sigma);
+
+    % After achieving P and Sigma, run all possible d and report the best results, based on energy criterion
+    disp('>>  calculating d');
+    if length(args)>=5,
+        d=str2num(args{5});
+    else
+        d = 0;
+        sum = zeros(1, length(Sigma) );
+        for i=1:length( Sigma )
+            sum += Sigma(i);
+    end
+    
     temp = zeros(1, length(Sigma) );
     max = 0;
     for i=1:length( Sigma ),
@@ -165,19 +166,27 @@ else
             break;
         end
     end
-    d--;
+    PCAMtx = transpose(P(:,[1:d])); 
+    d
+    save -binary PCAMtx.data PCAMtx;
+else
+    load ("-binary", "PCAMtx.data","PCAMtx");
 end
-PCAMtx = transpose(P(:,[1:d])); 
-d
 
 % 5. Construct FaceDB: Project Data to low-dimensional space
-disp('5. Construct FaceDB');
-dbSize = length(imageDb);
+disp('5. Construct FaceDB'); 
+if (~exist('faceDb.data', "file") ),
+    dbSize = length(imageDb);
 
-for i=1:dbSize,
-    faceDb(i).label = imageDb(i).label;
-    faceDb(i).image = PCAMtx * imageDb(i).image;
+    for i=1:dbSize,
+        faceDb(i).label = imageDb(i).label;
+        faceDb(i).image = PCAMtx * imageDb(i).image;
+    end
+    save -binary faceDb.data faceDb;
+else
+    load ("-binary", "faceDb.data", "faceDb");
 end
+    
 
 
 % 6. Classification: Nearest Neighbor
