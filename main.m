@@ -77,7 +77,7 @@ if ( ~exist('imageDb.data', "file") )  % if not exists imageDb file
     index=0;
     % s=0;
     for i=1:40
-        fold:erName = folder(i+3).name;
+        folderName = folder(i+3).name;
         subdir = dir( folderName );
         for j=1:10-fold
             index++;
@@ -197,6 +197,7 @@ for i=1:40
         s = size(img);
         
         % decrease img
+        %{
         [r,c] = size(img);
         temp=[];
         k=1;
@@ -210,7 +211,8 @@ for i=1:40
             res=[res, temp(:,k)];
             k+=cs;
         end
-       
+        %}
+        res = shrinkImg(img, rs); 
         s = size(res);
         testing.image = PCAMtx * reshape( double(res), s(1)*s(2), 1) ;
 
