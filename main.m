@@ -108,7 +108,6 @@ end
 
 % 4. Dimensionality Reduction: PCA
 disp('4. Dimensinality Reduction...');
-<<<<<<< HEAD
 if (~exist('PCAMtx.data', "file") ),
     % calculate xavg, X
     disp('>>  calculate xavg, X');
@@ -136,7 +135,7 @@ if (~exist('PCAMtx.data', "file") ),
 
     disp('>>  calculate Sigma');
     [P, Sigma] = findLeadingEigV(C,length(C)-1 );
-    & size(Sigma)
+    % size(Sigma)
 
     % Sigma=diag(Sigma);
 
@@ -158,6 +157,8 @@ if (~exist('PCAMtx.data', "file") ),
         
         temp += Sigma(i);
         printf('%f  d=%d\n', temp/sum, d);
+        printf('%d  ', i);
+        Sigma(i)
         if temp/sum > max,
             max = temp/sum;
             d = i;
@@ -167,8 +168,8 @@ if (~exist('PCAMtx.data', "file") ),
             break;
         end
     end
+    --d
     PCAMtx = transpose(P(:,[1:d])); 
-    d
     save -binary PCAMtx.data PCAMtx;
 else
     load ("-binary", "PCAMtx.data","PCAMtx");
