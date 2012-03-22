@@ -1,3 +1,6 @@
+global fold=1
+global shuffle=[]
+
 function res = Euclid(r1, r2)
     len = length(r1);
     res = 0;
@@ -25,6 +28,18 @@ function [leading_eig, Sigma] = findLeadingEigV( A, m )
     leading_eig = leading_eigV;    
 end
 
+function res=isTestData(num)
+    global fold
+    global shuffle
+
+    res = 0;
+    for i=1:10-fold
+        if num==shuffle(i),
+            res=1;
+            return;
+        end
+    end
+end
 
 % 0. Initialization
 
@@ -38,7 +53,6 @@ if nargin<1,
     exit;
 end
 
-fold=1;
 
 kValue = str2num(args{1});
 maxLabel = 0;
@@ -65,7 +79,12 @@ if nargin>=5,
 end
 printf('\n*************************\n\n');
 
+shuffle=[1:10];
+shffle=shuffle(randperm(10))
+
+
 % 1. Face Image Cropping and Preprocessing
+
 
 % 2. Construct ImageDB: Read Images
 
@@ -80,12 +99,16 @@ if ( ~exist('imageDb.data', "file") )  % if not exists imageDb file
         folderName = folder(i+3).name;
         subdir = dir( folderName );
         for j=1:10-fold
+            if ~isTestData(j),
+                continue;
+            end;
+            
             index++;
             imageDb(index).label = i;
             if i>maxLabel,
                 maxLabel=i;
             end
-            img = imread( strcat( folderName, '/', subdir(j+2).name ) );
+            img = imread( strcat( folderName, '/', subdir(j+2).name ) ) ;
             
             % decrease img
             res = shrinkImg(img, rs);
@@ -104,7 +127,6 @@ else
 end
 
 % 3. Construct FeatureDB: Extract Features
-% imageDb;
 
 % 4. Dimensionality Reduction: PCA
 disp('4. Dimensinality Reduction...');
@@ -116,7 +138,7 @@ if (~exist('PCAMtx.data', "file") ),
     X=double([]);
 
     for i=1:n
-        xavg += double(imageDb(i).image);
+        xavg += imageDb(i).image;
     end
     for i=1:D
         xavg(i) = xavg(i)/n;
@@ -128,9 +150,8 @@ if (~exist('PCAMtx.data', "file") ),
 
     disp('>>  calculate C');
     % original program for calculating cov C
-    C = (1/n)*X*transpose(X);
-    % C = cov(X);
-    % size(C)
+    % C = (1/n)*X*transpose(X);
+    C = cov(X');
     % length(C)
 
     disp('>>  calculate Sigma');
@@ -138,27 +159,31 @@ if (~exist('PCAMtx.data', "file") ),
     % size(Sigma)
 
     % Sigma=diag(Sigma);
-
     % After achieving P and Sigma, run all possible d and report the best results, based on energy criterion
     disp('>>  calculating d');
     if length(args)>=5,
         d=str2num(args{5});
     else
         d = 0;
+
+        %{
         sum = zeros(1, length(Sigma) );
-        for i=1:length( Sigma )
+        for i=1:length( Sigma )-1
+            sum += Sigma(i);
+        end
+        %}
+
+        sum = 0;
+        for i=1:length( Sigma )-1
             sum += Sigma(i);
         end
     end
     
-    temp = zeros(1, length(Sigma) );
+    % temp = zeros(1, length(Sigma) );
+    temp = 0;
     max = 0;
-    for i=1:length( Sigma ),
-        
+    for i=1:length( Sigma )-1,
         temp += Sigma(i);
-        printf('%f  d=%d\n', temp/sum, d);
-        printf('%d  ', i);
-        Sigma(i)
         if temp/sum > max,
             max = temp/sum;
             d = i;
@@ -168,7 +193,8 @@ if (~exist('PCAMtx.data', "file") ),
             break;
         end
     end
-    --d
+    --d;
+    d
     PCAMtx = transpose(P(:,[1:d])); 
     save -binary PCAMtx.data PCAMtx;
 else
@@ -202,6 +228,10 @@ for i=1:40
     folderName = folder(i+3).name;
     subdir = dir( folderName );
     for j=11-fold:10
+        if isTestData(j),
+            continue;
+        end
+        
         totalTesting++;
         testing.label = i;
         img = imread( strcat( folderName, '/', subdir(j+2).name ) );
