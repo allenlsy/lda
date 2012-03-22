@@ -1,14 +1,11 @@
 global fold=1
 global shuffle=[]
 
-function res = Euclid(r1, r2)
-    len = length(r1);
-    res = 0;
-    for i=1:len
-        res += (r1(i)-r2(i))^2;
-    end
-    % res = sqrt(res);
-end
+% function to first normalize the input img to double format with value 0 to 1.0 and then perform histogram transformation
+function histedImg = hisEqualize(img)
+        doubleImg = im2double(img);
+	histedImg = histeq(doubleImg, 256);
+endfunction
 
 function shrinkedImg = shrinkImg(img, rs)
     [r,c] = size(img);
@@ -16,16 +13,14 @@ function shrinkedImg = shrinkImg(img, rs)
 end
 
 %function to compute the first m leading eigenvectors of a matrix
-function [leading_eig, Sigma] = findLeadingEigV( A, m )
+function [leading_eigV, S] = findLeadingEigV( A, m )
     k=size(A,1); % assume A is square
 	[V,D]=eig(A); 
-	[S,I]=sort(diag(D)); 
+	[S,I]=sort(diag(D), 'descend'); 
 	leading_eigV = [];
 	for i=1:m
-        leading_eigV = [leading_eigV,V(:,I(k-i+1))];
+	        leading_eigV = [leading_eigV,V(:,I(i))];
 	end
-    Sigma=sort(diag(D));
-    leading_eig = leading_eigV;    
 end
 
 function res=isTestData(num)
@@ -57,7 +52,6 @@ end
 kValue = str2num(args{1});
 maxLabel = 0;
 rs=1;
-cs=1;
 energy=1;
 
 if nargin>=2,
@@ -66,7 +60,6 @@ end
 
 if nargin>=3
     rs = str2num(args{3});
-    cs = rs;
 end
 
 if nargin>=4,
@@ -80,7 +73,7 @@ end
 printf('\n*************************\n\n');
 
 shuffle=[1:10];
-shffle=shuffle(randperm(10))
+% shffle=shuffle(randperm(10))
 
 
 % 1. Face Image Cropping and Preprocessing
@@ -112,9 +105,9 @@ if ( ~exist('imageDb.data', "file") )  % if not exists imageDb file
             
             % decrease img
             res = shrinkImg(img, rs);
-
+	    res = hisEqualize(res);
             s = size(res);
-            imageDb(index).image = reshape( double(res), s(1)*s(2), 1) ;
+            imageDb(index).image = reshape( res, s(1)*s(2), 1) ;
         end
     end
     D=s(1)*s(2);
@@ -157,7 +150,7 @@ if (~exist('PCAMtx.data', "file") ),
     disp('>>  calculate Sigma');
     [P, Sigma] = findLeadingEigV(C,length(C)-1 );
     % size(Sigma)
-
+    
     % Sigma=diag(Sigma);
     % After achieving P and Sigma, run all possible d and report the best results, based on energy criterion
     disp('>>  calculating d');
@@ -178,7 +171,7 @@ if (~exist('PCAMtx.data', "file") ),
             sum += Sigma(i);
         end
     end
-    
+
     % temp = zeros(1, length(Sigma) );
     temp = 0;
     max = 0;
@@ -237,31 +230,17 @@ for i=1:40
         img = imread( strcat( folderName, '/', subdir(j+2).name ) );
         s = size(img);
         
-        % decrease img
-        %{
-        [r,c] = size(img);
-        temp=[];
-        k=1;
-        while k<=r,
-            temp = [temp;img(k,:)];
-            k+=rs;
-        end
-        k=1;
-        res=[];
-        while k<=c,
-            res=[res, temp(:,k)];
-            k+=cs;
-        end
-        %}
         res = shrinkImg(img, rs); 
+	    res = hisEqualize(res);
+
         s = size(res);
-        testing.image = PCAMtx * reshape( double(res), s(1)*s(2), 1) ;
+        testing.image = PCAMtx * reshape( res, s(1)*s(2), 1) ;
 
         % knn
         % 1-distance 2-label
         candidates = [];
         for k=1:length(faceDb),
-            candidates(k,1) = Euclid(testing.image, faceDb(k).image);
+            candidates(k,1) = norm(testing.image - faceDb(k).image);
             candidates(k,2) = faceDb(k).label;
         end
 
@@ -279,7 +258,7 @@ for i=1:40
                 res = k;
             end
         end
-        printf('>>  testing %3d **  predicted: %4d  real: %4d\n', totalTesting, res, testing.label);
+        % printf('>>  testing %3d **  predicted: %4d  real: %4d\n', totalTesting, res, testing.label);
         if res == testing.label,
             correct++;
         end
